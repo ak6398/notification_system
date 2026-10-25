@@ -32,6 +32,7 @@ def admin_matrix_view(request):
         'channels': channels,
         'logs': recent_logs,
         'test_email': os.getenv('TEST_RECIPIENT_EMAIL', ''),
+        'onesignal_app_id': os.getenv('ONESIGNAL_APP_ID', '88dc746e-7ac3-437b-b102-1d249a19b7f4'),
     })
 
 @csrf_exempt

@@ -9,9 +9,20 @@
             <h2 class="fw-bold mb-1">Notification Settings</h2>
             <p class="text-muted mb-0">Manage triggers across Email and Web Push from one central screen.</p>
         </div>
-        <div class="card shadow-sm border-0 px-3 py-2 bg-white">
-            <span class="small text-muted">Configured Email Recipient:</span>
-            <span class="fw-semibold text-primary"><i class="bi bi-envelope-fill me-1"></i>{{ test_email|default:"Not configured" }}</span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="card shadow-sm border-0 px-3 py-2 bg-white d-flex flex-row align-items-center gap-2">
+                <div>
+                    <span class="small text-muted d-block">Web Push Status:</span>
+                    <span id="pushStatusBadge" class="badge bg-secondary">Checking...</span>
+                </div>
+                <button id="enablePushBtn" class="btn btn-sm btn-outline-warning text-dark ms-2" style="display: none;">
+                    <i class="bi bi-bell-fill me-1"></i>Enable Push
+                </button>
+            </div>
+            <div class="card shadow-sm border-0 px-3 py-2 bg-white">
+                <span class="small text-muted">Configured Email Recipient:</span>
+                <span class="fw-semibold text-primary"><i class="bi bi-envelope-fill me-1"></i>{{ test_email|default:"Not configured" }}</span>
+            </div>
         </div>
     </div>
 

@@ -1,7 +1,75 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Request Desktop Notification Permission on load
-    if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
+    // 0. Web Push Notification Permission & Status Badge
+    const pushStatusBadge = document.getElementById("pushStatusBadge");
+    const enablePushBtn = document.getElementById("enablePushBtn");
+
+    function updatePushStatus() {
+        if (!("Notification" in window)) {
+            if (pushStatusBadge) {
+                pushStatusBadge.className = "badge bg-danger";
+                pushStatusBadge.innerText = "Unsupported";
+            }
+            return;
+        }
+
+        if (Notification.permission === "granted") {
+            if (pushStatusBadge) {
+                pushStatusBadge.className = "badge bg-success";
+                pushStatusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Active`;
+            }
+            if (enablePushBtn) enablePushBtn.style.display = "none";
+        } else if (Notification.permission === "denied") {
+            if (pushStatusBadge) {
+                pushStatusBadge.className = "badge bg-danger";
+                pushStatusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Blocked`;
+            }
+            if (enablePushBtn) {
+                enablePushBtn.style.display = "inline-block";
+                enablePushBtn.innerText = "Blocked in Browser";
+                enablePushBtn.title = "Click the lock icon in your browser URL bar to allow notifications";
+            }
+        } else {
+            if (pushStatusBadge) {
+                pushStatusBadge.className = "badge bg-warning text-dark";
+                pushStatusBadge.innerText = "Permission Required";
+            }
+            if (enablePushBtn) {
+                enablePushBtn.style.display = "inline-block";
+                enablePushBtn.innerHTML = `<i class="bi bi-bell-fill me-1"></i>Enable Push`;
+            }
+        }
+    }
+
+    updatePushStatus();
+
+    if (enablePushBtn) {
+        enablePushBtn.addEventListener("click", async () => {
+            if (!("Notification" in window)) {
+                alert("Your browser does not support desktop push notifications.");
+                return;
+            }
+            // Also prompt OneSignal subscription if SDK is loaded
+            if (window.OneSignalDeferred) {
+                OneSignalDeferred.push(async function(OneSignal) {
+                    try {
+                        await OneSignal.Slidedown.promptPush();
+                    } catch (e) {
+                        console.log("OneSignal prompt:", e);
+                    }
+                });
+            }
+
+            const permission = await Notification.requestPermission();
+            updatePushStatus();
+            if (permission === "granted") {
+                new Notification("Starclinch Notifications Active! 🔔", {
+                    body: "Web Push notifications are now enabled. Test any trigger in the table!",
+                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827392.png"
+                });
+            } else if (permission === "denied") {
+                alert("Notifications were blocked. Please click the lock icon in your address bar and change Notifications to 'Allow'.");
+            }
+        });
     }
 
     // 1. Channel On / Off Toggles
@@ -77,15 +145,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // If testing Web Push, show native browser popup right on screen!
                 if (data.channel === "web_push") {
-                    if (Notification.permission === "granted") {
+                    if (window.Notification && Notification.permission === "granted") {
                         new Notification(data.title || "Starclinch Notification", {
                             body: data.body,
                             icon: "https://cdn-icons-png.flaticon.com/512/1827/1827392.png"
                         });
-                    } else if (Notification.permission !== "denied") {
+                    } else if (window.Notification && Notification.permission === "denied") {
+                        alert("⚠️ Notification sent to backend, but your browser is blocking desktop popups!\n\nPlease click the lock icon in your address bar and change Notifications to 'Allow'.");
+                    } else if (window.Notification) {
                         Notification.requestPermission().then(permission => {
+                            updatePushStatus();
                             if (permission === "granted") {
-                                new Notification(data.title, { body: data.body });
+                                new Notification(data.title || "Starclinch Notification", { body: data.body });
                             }
                         });
                     }

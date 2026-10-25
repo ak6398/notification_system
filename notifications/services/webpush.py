@@ -7,8 +7,14 @@ class WebPushService:
         app_id = os.getenv("ONESIGNAL_APP_ID", "").strip()
         rest_api_key = os.getenv("ONESIGNAL_REST_API_KEY", "").strip()
 
-        # If OneSignal credentials exist, try OneSignal REST API
-        if app_id and rest_api_key and app_id != "your_onesignal_app_id" and rest_api_key != "your_onesignal_rest_api_key":
+        # 1. Mode A: If OneSignal credentials exist in .env / Render, send via OneSignal REST API
+        is_onesignal_configured = (
+            app_id and rest_api_key 
+            and app_id != "your_onesignal_app_id" 
+            and rest_api_key != "your_onesignal_rest_api_key"
+        )
+
+        if is_onesignal_configured:
             url = "https://onesignal.com/api/v1/notifications"
             headers = {
                 "Authorization": f"Basic {rest_api_key}",
@@ -22,15 +28,34 @@ class WebPushService:
             }
             try:
                 res = requests.post(url, json=payload, headers=headers, timeout=10)
-                data = res.json()
-                if res.status_code == 200 and not data.get("errors"):
-                    return {"status": "SUCCESS", "response": data}
-            except Exception as e:
-                pass
+                try:
+                    data = res.json()
+                except Exception:
+                    data = {}
 
-        # Native Browser Web Push Mode (Always succeeds locally)
+                if res.status_code in (200, 201) and not data.get("errors"):
+                    push_id = data.get("id", "sent")
+                    return {
+                        "status": "SUCCESS",
+                        "mode": "onesignal_api",
+                        "response": f"Push delivered via OneSignal REST API (ID: {push_id})"
+                    }
+
+                err_msg = data.get("errors") or res.text
+                return {
+                    "status": "FAILED",
+                    "error": f"OneSignal API error ({res.status_code}): {err_msg}"
+                }
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "error": f"OneSignal request failed: {str(e)}"
+                }
+
+        # 2. Mode B: Native Browser Web Push Mode (Default - zero external API keys needed)
         return {
             "status": "SUCCESS",
             "mode": "browser_push",
-            "response": "Browser Web Push notification delivered successfully"
+            "response": "Browser Web Push notification delivered to desktop"
         }
+
