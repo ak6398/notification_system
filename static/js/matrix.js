@@ -91,10 +91,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // Refresh table to show the new SUCCESS log
-                setTimeout(() => location.reload(), 800);
+                const resStatus = data.result?.status;
+                const resDetail = data.result?.result?.response || data.result?.result?.error || "";
+
+                if (resStatus === "SUCCESS") {
+                    btn.classList.remove("btn-outline-success", "btn-outline-warning");
+                    btn.classList.add("btn-success");
+                    btn.innerHTML = `<i class="bi bi-check-circle"></i> Sent!`;
+                } else {
+                    btn.classList.remove("btn-outline-success", "btn-outline-warning");
+                    btn.classList.add("btn-danger");
+                    btn.innerHTML = `<i class="bi bi-x-circle"></i> Failed`;
+                    alert(`Notification Failed:\n\n${resDetail || "Please verify credentials in environment variables."}`);
+                }
+
+                // Refresh table to show the new log entry
+                setTimeout(() => location.reload(), 1500);
             } catch (err) {
-                alert("Failed to send test notification");
+                alert("Failed to send test notification: " + err.message);
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
